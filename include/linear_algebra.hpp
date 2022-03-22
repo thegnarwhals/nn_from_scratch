@@ -6,14 +6,22 @@
 
 namespace nn {
 
-extern std::default_random_engine
-    generator; // need to define in cpp file to avoid multiple defs
+// need to define in cpp file to avoid multiple defs
+extern std::default_random_engine generator;
 
 template <typename T> class Matrix {
 public:
   Matrix(unsigned int height, unsigned int width)
       : height(height), width(width),
         rows(std::valarray<std::valarray<T>>(std::valarray<T>(width), height)) {
+  }
+  Matrix<T> &operator+=(const Matrix<T> &other) {
+    rows += other.rows;
+    return *this;
+  }
+  Matrix<T> &operator-=(const Matrix<T> &other) {
+    rows -= other.rows;
+    return *this;
   }
   static Matrix<T> Random(unsigned int height, unsigned int width, T mean,
                           T stddev) {
@@ -22,6 +30,15 @@ public:
     for (unsigned int i = 0; i < height; i++) {
       for (unsigned int j = 0; j < width; j++) {
         matrix.rows[i][j] = distribution(generator);
+      }
+    }
+    return matrix;
+  }
+  static Matrix<T> Zeros(unsigned int height, unsigned int width) {
+    Matrix<T> matrix(height, width);
+    for (unsigned int i = 0; i < height; i++) {
+      for (unsigned int j = 0; j < width; j++) {
+        matrix.rows[i][j] = static_cast<T>(0);
       }
     }
     return matrix;
@@ -48,18 +65,40 @@ public:
       : length(elements.size()), elements(elements) {}
   Vector(const Vector<T> &other)
       : length(other.length), elements(other.elements) {}
-  Vector<T>& operator=(const Vector<T> &other) {
+  Vector<T> &operator=(const Vector<T> &other) {
     assert(length == other.length);
-    if(this != &other){
+    if (this != &other) {
       elements = other.elements;
     }
     return *this;
+  }
+  Vector<T> &operator+=(const Vector<T> &other) {
+    elements += other.elements;
+    return *this;
+  }
+  Vector<T> &operator-=(const Vector<T> &other) {
+    elements -= other.elements;
+    return *this;
+  }
+  Vector<T> OuterProduct(const Vector<T> &other) {
+    Matrix<T> out_matrix(length, other.length);
+    for (unsigned int i = 0; i < out_matrix.height; i++) {
+      out_matrix.rows[i] = elements[i] * other.elements;
+    }
+    return out_matrix;
   }
   static Vector<T> Random(unsigned int length, T mean, T stddev) {
     std::normal_distribution<T> distribution(mean, stddev);
     Vector<T> vector(length);
     for (unsigned int i = 0; i < length; i++) {
       vector.elements[i] = distribution(generator);
+    }
+    return vector;
+  }
+  static Vector<T> Zeros(unsigned int length) {
+    Vector<T> vector(length);
+    for (unsigned int i = 0; i < length; i++) {
+      vector.elements[i] = static_cast<T>(0);
     }
     return vector;
   }
@@ -127,6 +166,24 @@ Vector<T> operator*(const Matrix<T> &matrix, const Vector<T> &vector) {
     out_vector.elements[i] = (matrix.rows[i] * vector.elements).sum();
   }
   return out_vector;
+}
+
+template <typename T>
+Vector<T> operator*(const Vector<T> &vector1, const Vector<T> &vector2) {
+  Vector<T> out_vector(vector1.elements * vector2.elements);
+  return out_vector;
+}
+
+template <typename T>
+Vector<T> operator*(T scalar, const Vector<T> &vector) {
+  Vector<T> out_vector(scalar * vector.elements);
+  return out_vector;
+}
+
+template <typename T>
+Matrix<T> operator*(T scalar, const Matrix<T> &matrix) {
+  Matrix<T> out_matrix(scalar * matrix.rows);
+  return out_matrix;
 }
 
 template <typename T>
