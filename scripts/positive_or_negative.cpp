@@ -38,19 +38,34 @@ int main() {
   for (const auto &biases : network.biases) {
     std::cout << biases << std::endl;
   }
-  nn::Vector<nn::NNType> input(std::valarray<nn::NNType>{1});
-  std::cout << "Input: " << input << std::endl;
-  auto output = network.FeedForward(input);
-  std::cout << "Output: " << output << std::endl;
 
   // Let's make some training data for estimating whether a number is positive
   // or negative
   constexpr unsigned int n_training = 80, n_test = 20;
   auto training_data = GenerateAnnotatedData(n_training);
   auto test_data = GenerateAnnotatedData(n_test);
-  constexpr unsigned int epochs = 1, mini_batch_size = 10;
+  constexpr unsigned int epochs = 10, mini_batch_size = 10;
   constexpr float eta = 1.f;
   network.Sgd(training_data, epochs, mini_batch_size, eta, test_data);
+
+  std::cout << "Final weights:" << std::endl;
+  for (const auto &weights : network.weights) {
+    std::cout << weights << std::endl;
+  }
+  std::cout << "Final biases:" << std::endl;
+  for (const auto &biases : network.biases) {
+    std::cout << biases << std::endl;
+  }
+
+  while(true) {
+    // Run on user input
+    nn::Vector<nn::NNType> input(1);
+    std::cin >> input.elements[0];
+    std::cout << "Input: " << input << std::endl;
+    const auto output = network.FeedForward(input);
+    std::cout << "Output: " << output << std::endl;
+  }
+
   std::cout
       << "🎉 \033[1;32mJamie you're a genius! The script completed! Here's "
          "some green text to celebrate!\033[0m 🎉"

@@ -15,12 +15,19 @@ public:
       : height(height), width(width),
         rows(std::valarray<std::valarray<T>>(std::valarray<T>(width), height)) {
   }
+  Matrix(const Matrix<T>&) = default;
   Matrix<T> &operator+=(const Matrix<T> &other) {
     rows += other.rows;
     return *this;
   }
   Matrix<T> &operator-=(const Matrix<T> &other) {
     rows -= other.rows;
+    return *this;
+  }
+  Matrix<T>& operator=(Matrix<T>&& other) {
+    assert(height == other.height);
+    assert(width == other.width);
+    rows = other.rows;
     return *this;
   }
   static Matrix<T> Random(unsigned int height, unsigned int width, T mean,
@@ -80,7 +87,7 @@ public:
     elements -= other.elements;
     return *this;
   }
-  Vector<T> OuterProduct(const Vector<T> &other) {
+  Matrix<T> OuterProduct(const Vector<T> &other) {
     Matrix<T> out_matrix(length, other.length);
     for (unsigned int i = 0; i < out_matrix.height; i++) {
       out_matrix.rows[i] = elements[i] * other.elements;
@@ -181,8 +188,17 @@ Vector<T> operator*(T scalar, const Vector<T> &vector) {
 }
 
 template <typename T>
+Vector<T> operator-(T scalar, const Vector<T> &vector) {
+  Vector<T> out_vector(scalar - vector.elements);
+  return out_vector;
+}
+
+template <typename T>
 Matrix<T> operator*(T scalar, const Matrix<T> &matrix) {
-  Matrix<T> out_matrix(scalar * matrix.rows);
+  Matrix<T> out_matrix(matrix.height, matrix.width);
+  for (unsigned int row_idx = 0; row_idx < matrix.height; row_idx++) {
+    out_matrix.rows[row_idx] = scalar * matrix.rows[row_idx];
+  }
   return out_matrix;
 }
 
@@ -190,6 +206,13 @@ template <typename T>
 Vector<T> operator+(const Vector<T> &vector1, const Vector<T> &vector2) {
   assert(vector1.length == vector2.length);
   Vector<T> out_vector(vector1.elements + vector2.elements);
+  return out_vector;
+}
+
+template <typename T>
+Vector<T> operator-(const Vector<T> &vector1, const Vector<T> &vector2) {
+  assert(vector1.length == vector2.length);
+  Vector<T> out_vector(vector1.elements - vector2.elements);
   return out_vector;
 }
 

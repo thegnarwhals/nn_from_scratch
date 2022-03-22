@@ -13,6 +13,6 @@ template <typename T> Vector<T> Sigmoid(Vector<T> input) {
 }
 
 template <typename T> Vector<T> SigmoidPrime(Vector<T> input) {
-  return Sigmoid(input) * (1 - Sigmoid(input));
+  return Sigmoid(input) * (static_cast<T>(1) - Sigmoid(input));
 }
 } // namespace nn
