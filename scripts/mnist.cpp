@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <memory>
 #include <optional>
 #include <random>
 #include <string>
@@ -164,9 +165,10 @@ GenerateAnnotatedData(std::vector<nn::Matrix<nn::NNType>> images,
  * @return     0 if successful
  */
 int main(int argc, char **argv) {
-  if (argc != 5) {
+  if (argc != 6) {
     std::cout << "MNIST demo of NNLib" << std::endl;
-    std::cout << "Arguments are paths to the following files, in this order"
+    std::cout << "Arguments are 'relu' or 'sigmoid', then the paths to the "
+                 "following files, in this order"
               << std::endl;
     std::cout << "1. train-images.idx3-ubyte: training set images" << std::endl;
     std::cout << "2. train-labels.idx1-ubyte: training set labels" << std::endl;
@@ -175,10 +177,11 @@ int main(int argc, char **argv) {
     std::cout << "Download from http://yann.lecun.com/exdb/mnist/" << std::endl;
     return 0;
   }
-  const std::string train_images_path = argv[1];
-  const std::string train_labels_path = argv[2];
-  const std::string test_images_path = argv[3];
-  const std::string test_labels_path = argv[4];
+  const std::string nonlinearity = argv[1];
+  const std::string train_images_path = argv[2];
+  const std::string train_labels_path = argv[3];
+  const std::string test_images_path = argv[4];
+  const std::string test_labels_path = argv[5];
 
   const auto train_images = ReadIdxMatrixFile(train_images_path);
   const auto train_labels = ReadIdxLabelFile(train_labels_path);
@@ -188,17 +191,27 @@ int main(int argc, char **argv) {
   const auto test_labels = ReadIdxLabelFile(test_labels_path);
   const auto test_data = GenerateAnnotatedData(test_images, test_labels);
 
-  nn::Network network(
+  std::vector<unsigned int> layer_sizes(
       {training_data[0].first.length, 16, 16, training_data[0].second.length});
+  std::unique_ptr<nn::Network> network;
+  if (nonlinearity == "relu") {
+    network.reset(new nn::SigmoidNetwork(layer_sizes));
+  } else if (nonlinearity == "sigmoid") {
+    network.reset(new nn::ReluNetwork(layer_sizes));
+  } else {
+    std::cerr << "nonlinearity argument must be 'relu' or 'sigmoid'"
+              << std::endl;
+    return -1;
+  }
   constexpr unsigned int epochs = 30, mini_batch_size = 10;
   constexpr float eta = 3.f;
-  network.Sgd(training_data, epochs, mini_batch_size, eta, test_data);
+  network->Sgd(training_data, epochs, mini_batch_size, eta, test_data);
   for (unsigned int image_idx = 0; image_idx < test_images.size();
        image_idx++) {
     DrawImage(test_images[image_idx]);
     std::cout << "Actual: "
               << static_cast<unsigned int>(test_labels[image_idx]);
-    const auto output = network.FeedForward(test_data[image_idx].first);
+    const auto output = network->FeedForward(test_data[image_idx].first);
     std::cout << ", Network: " << nn::GetMaxIndex(output) << std::endl;
   }
 

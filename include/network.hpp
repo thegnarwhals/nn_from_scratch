@@ -43,7 +43,8 @@ unsigned int OneHotToIndex(Vector<NNType> one_hot_vector);
 unsigned int GetMaxIndex(Vector<NNType> vector);
 
 /**
- * @brief      This class describes a network.
+ * @brief      This interface class describes a network. It contains pure
+ * virtual functions that must be overriden. Child classes are declared below.
  */
 class Network {
 public:
@@ -80,10 +81,34 @@ private:
   static Vector<NNType> CostDerivative_(Vector<NNType> output,
                                         Vector<NNType> ground_truth);
   unsigned int Evaluate_(AnnotatedData test_data);
+  virtual Vector<NNType> Nonlinearity_(Vector<NNType> weighted_inputs) = 0;
+  virtual Vector<NNType> NonlinearityPrime_(Vector<NNType> weighted_inputs) = 0;
   const std::vector<unsigned int> layer_sizes_;
   const unsigned int num_layers_;
   Weights weights_;
   Biases biases_;
+};
+
+/**
+ * @brief      This class describes a network with sigmoid nonlinearities.
+ */
+class SigmoidNetwork : public Network {
+public:
+  using Network::Network;
+private:
+  virtual Vector<NNType> Nonlinearity_(Vector<NNType> weighted_inputs) override;
+  virtual Vector<NNType> NonlinearityPrime_(Vector<NNType> weighted_inputs) override;
+};
+
+/**
+ * @brief      This class describes a network with ReLU nonlinearities.
+ */
+class ReluNetwork : public Network {
+public:
+  using Network::Network;
+private:
+  virtual Vector<NNType> Nonlinearity_(Vector<NNType> weighted_inputs) override;
+  virtual Vector<NNType> NonlinearityPrime_(Vector<NNType> weighted_inputs) override;
 };
 
 } // namespace nn

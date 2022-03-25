@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 #include <optional>
 #include <random>
 #include <utility>
@@ -24,10 +25,28 @@ nn::AnnotatedData GenerateAnnotatedData(unsigned int n_examples) {
   return examples;
 }
 
-int main() {
+int main(int argc, char **argv) {
+  if (argc != 2) {
+    std::cout << "Positive or negative demo of NNLib" << std::endl;
+    std::cout
+        << "Takes one argument: nonlinearity type which is 'relu' or 'sigmoid'"
+        << std::endl;
+    return 0;
+  }
+  std::string nonlinearity{argv[1]};
   // Network that can decide whether a number is positive or negative
   // Input one number, two output neurons, one for positive, one for negative.
-  nn::Network network({1, 2});
+  std::vector<unsigned int> layer_sizes({1, 2});
+  std::unique_ptr<nn::Network> network;
+  if (nonlinearity == "relu") {
+    network.reset(new nn::SigmoidNetwork(layer_sizes));
+  } else if (nonlinearity == "sigmoid") {
+    network.reset(new nn::ReluNetwork(layer_sizes));
+  } else {
+    std::cerr << "nonlinearity argument must be 'relu' or 'sigmoid'"
+              << std::endl;
+    return -1;
+  }
 
   // Let's make some training data for estimating whether a number is positive
   // or negative
@@ -36,15 +55,16 @@ int main() {
   auto test_data = GenerateAnnotatedData(n_test);
   constexpr unsigned int epochs = 10, mini_batch_size = 10;
   constexpr float eta = 1.f;
-  network.Sgd(training_data, epochs, mini_batch_size, eta, test_data);
+  network->Sgd(training_data, epochs, mini_batch_size, eta, test_data);
 
-  while(true) {
+  while (true) {
     // Run on user input
     nn::Vector<nn::NNType> input(1);
-    std::cout << "Enter a float: " << std::flush;
+    std::cout << "Ctrl+C to quit, or enter a float to try out the network: "
+              << std::flush;
     std::cin >> input.elements[0];
     std::cout << "Input: " << input << std::endl;
-    const auto output = network.FeedForward(input);
+    const auto output = network->FeedForward(input);
     std::cout << "Output: " << output << std::endl;
     if (output.elements[0] > output.elements[1]) {
       std::cout << "Prediction: positive!" << std::endl;

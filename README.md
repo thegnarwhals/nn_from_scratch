@@ -10,9 +10,9 @@ cmake ..
 make -j$(nproc)
 ```
 ## Positive or negative demo
-A very basic demo that trains a two-neuron network to classify numbers as positive or negative.
+A very basic demo that trains a two-neuron network to classify numbers as positive or negative. It can use sigmoid or ReLU nonlinearities.
 ```bash
-./scripts/positive_or_negative
+./scripts/positive_or_negative <relu|sigmoid>
 ```
 Output:
 ```
@@ -32,9 +32,10 @@ Prediction: negative!
 ```
 
 ## MNIST demo
+Classify handwritten numbers! This demo can use sigmoid or ReLU nonlinearities.
 Download and unzip the MNIST test and training datasets from http://yann.lecun.com/exdb/mnist/, then run this demo with:
 ```bash
-./scripts/mnist ~/Downloads/train-images.idx3-ubyte ~/Downloads/train-labels.idx1-ubyte ~/Downloads/t10k-images.idx3-ubyte ~/Downloads/t10k-labels.idx1-ubyte
+./scripts/mnist <relu|sigmoid> ~/Downloads/train-images.idx3-ubyte ~/Downloads/train-labels.idx1-ubyte ~/Downloads/t10k-images.idx3-ubyte ~/Downloads/t10k-labels.idx1-ubyte
 ```
 Output:
 ```
@@ -172,3 +173,5 @@ Actual: 9, Network: 9
 
 ## TODO
 * Unit tests!
+* Make data members private throughout
+* Implement move semantics for linear algebra classes
