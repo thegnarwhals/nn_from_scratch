@@ -20,8 +20,6 @@ nn::AnnotatedData GenerateAnnotatedData(unsigned int n_examples) {
       output = nn::Vector(std::valarray<nn::NNType>({0, 1}));
     }
     examples.push_back(std::make_pair(input, output));
-    std::cout << "idx " << example_idx << ": " << input << ", " << output
-              << std::endl;
   }
   return examples;
 }
@@ -43,10 +41,16 @@ int main() {
   while(true) {
     // Run on user input
     nn::Vector<nn::NNType> input(1);
+    std::cout << "Enter a float: " << std::flush;
     std::cin >> input.elements[0];
     std::cout << "Input: " << input << std::endl;
     const auto output = network.FeedForward(input);
     std::cout << "Output: " << output << std::endl;
+    if (output.elements[0] > output.elements[1]) {
+      std::cout << "Prediction: positive!" << std::endl;
+    } else {
+      std::cout << "Prediction: negative!" << std::endl;
+    }
   }
 
   std::cout

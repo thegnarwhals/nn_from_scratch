@@ -54,13 +54,13 @@ void DrawImage(nn::Matrix<nn::NNType> image) {
         if (image.rows[row_idx + 1][col_idx] < 0.5) {
           std::cout << " "; // Black and black
         } else {
-          std::cout << "\xDC"; // Black and white
+          std::cout << "▄"; // Black and white
         }
       } else {
         if (image.rows[row_idx + 1][col_idx] < 0.5) {
-          std::cout << "\xDF"; // White and black
+          std::cout << "▀"; // White and black
         } else {
-          std::cout << "\xDB"; // White and white
+          std::cout << "█"; // White and white
         }
       }
     }
