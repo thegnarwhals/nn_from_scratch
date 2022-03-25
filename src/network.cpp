@@ -9,6 +9,13 @@
 
 namespace nn {
 
+Vector<NNType> IndexToOneHot(unsigned int index, unsigned int n_indexes) {
+  assert(index < n_indexes);
+  auto one_hot = Vector<NNType>::Zeros(n_indexes);
+  one_hot.elements[index] = static_cast<NNType>(1);
+  return one_hot;
+}
+
 unsigned int OneHotToIndex(Vector<NNType> vector) {
   const auto result_it =
       std::find(std::begin(vector.elements), std::end(vector.elements),
@@ -26,26 +33,29 @@ unsigned int GetMaxIndex(Vector<NNType> vector) {
 }
 
 Network::Network(std::vector<unsigned int> layer_sizes)
-    : layer_sizes(layer_sizes), num_layers(layer_sizes.size()) {
+    : layer_sizes_(layer_sizes), num_layers_(layer_sizes.size()) {
+  std::cout << "Randomly initialising network with layer sizes [";
+  for (unsigned int layer_idx = 0; layer_idx < num_layers_ - 1; layer_idx++) {
+    std::cout << layer_sizes_[layer_idx] << ", ";
+  }
+  std::cout << layer_sizes_[num_layers_ - 1] << "]" << std::endl;
   // Random initialisation of weights and biases
   const NNType mean = 0.f;
   const NNType stddev = 1.f;
-  for (unsigned int i = 1; i < num_layers; i++) {
-    biases.push_back(Vector<NNType>::Random(layer_sizes[i], mean, stddev));
+  for (unsigned int i = 1; i < num_layers_; i++) {
+    biases_.push_back(Vector<NNType>::Random(layer_sizes_[i], mean, stddev));
   }
-  for (unsigned int i = 1; i < num_layers; i++) {
-    weights.push_back(Matrix<NNType>::Random(layer_sizes[i], layer_sizes[i - 1],
+  for (unsigned int i = 1; i < num_layers_; i++) {
+    weights_.push_back(Matrix<NNType>::Random(layer_sizes_[i], layer_sizes_[i - 1],
                                              mean, stddev));
   }
 }
 
 Vector<NNType> Network::FeedForward(Vector<NNType> input) {
   std::vector<Vector<NNType>> layer_outputs({input});
-  for (unsigned int i = 1; i < num_layers; i++) {
-    std::cout << "Calculating layer " << i + 1 << " of " << num_layers
-              << std::endl;
+  for (unsigned int i = 1; i < num_layers_; i++) {
     layer_outputs.push_back(
-        Sigmoid(weights[i - 1] * layer_outputs.back() + biases[i - 1]));
+        Sigmoid(weights_[i - 1] * layer_outputs.back() + biases_[i - 1]));
   }
   return layer_outputs.back();
 }
@@ -62,14 +72,11 @@ void Network::Sgd(AnnotatedData training_data, unsigned int epochs,
   // epoch, and partial progress printed out.  This is useful for
   // tracking progress, but slows things down substantially.
   const unsigned int n_test = test_data ? test_data->size() : 0;
-  std::cout << "n_test: " << n_test << std::endl;
-
   if (test_data) {
-    std::cout << "Initial evaluation: " << Evaluate(test_data.value()) << " / "
+    std::cout << "Initial evaluation: " << Evaluate_(test_data.value()) << " / "
               << n_test << std::endl;
   }
   const unsigned int n_training = training_data.size();
-  std::cout << "n_training: " << n_training << std::endl;
   for (unsigned int epoch_idx = 0; epoch_idx < epochs; epoch_idx++) {
     // obtain a time-based seed:
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -85,11 +92,12 @@ void Network::Sgd(AnnotatedData training_data, unsigned int epochs,
       mini_batches.push_back(AnnotatedData(training_data.begin() + start_idx,
                                            training_data.begin() + end_idx));
     }
+    unsigned int mini_batch_idx = 0;
     for (const auto &mini_batch : mini_batches) {
-      UpdateMiniBatch(mini_batch, eta);
+      UpdateMiniBatch_(mini_batch, eta);
     }
     if (test_data) {
-      std::cout << "Epoch " << epoch_idx << ": " << Evaluate(test_data.value())
+      std::cout << "Epoch " << epoch_idx << ": " << Evaluate_(test_data.value())
                 << " / " << n_test << std::endl;
     } else {
       std::cout << "Epoch " << epoch_idx << " complete" << std::endl;
@@ -97,42 +105,42 @@ void Network::Sgd(AnnotatedData training_data, unsigned int epochs,
   }
 }
 
-void Network::UpdateMiniBatch(AnnotatedData mini_batch, NNType eta) {
+void Network::UpdateMiniBatch_(AnnotatedData mini_batch, NNType eta) {
   Biases nabla_b;
-  for (const auto &layer_biases : biases) {
+  for (const auto &layer_biases : biases_) {
     nabla_b.push_back(Vector<NNType>::Zeros(layer_biases.length));
   }
   Weights nabla_w;
-  for (const auto &layer_weights : weights) {
+  for (const auto &layer_weights : weights_) {
     nabla_w.push_back(
         Matrix<NNType>::Zeros(layer_weights.height, layer_weights.width));
   }
   for (const auto &example : mini_batch) {
-    const auto delta_nabla_b_and_w = Backprop(example);
+    const auto delta_nabla_b_and_w = Backprop_(example);
     const auto delta_nabla_b = delta_nabla_b_and_w.first;
     const auto delta_nabla_w = delta_nabla_b_and_w.second;
-    for (unsigned int layer_idx = 0; layer_idx < num_layers - 1; layer_idx++) {
+    for (unsigned int layer_idx = 0; layer_idx < num_layers_ - 1; layer_idx++) {
       nabla_b[layer_idx] += delta_nabla_b[layer_idx];
       nabla_w[layer_idx] += delta_nabla_w[layer_idx];
     }
   }
-  for (unsigned int layer_idx = 0; layer_idx < num_layers - 1; layer_idx++) {
-    biases[layer_idx] -= (eta / mini_batch.size()) * nabla_b[layer_idx];
-    weights[layer_idx] -= (eta / mini_batch.size()) * nabla_w[layer_idx];
+  for (unsigned int layer_idx = 0; layer_idx < num_layers_ - 1; layer_idx++) {
+    biases_[layer_idx] -= (eta / mini_batch.size()) * nabla_b[layer_idx];
+    weights_[layer_idx] -= (eta / mini_batch.size()) * nabla_w[layer_idx];
   }
 }
 
-DeltaNablaBAndW Network::Backprop(Example example) {
+DeltaNablaBAndW Network::Backprop_(Example example) {
   // Return a pair "(nabla_b, nabla_w)" representing the
   // gradient for the cost function C_x. "nabla_b" and
   // "nabla_w" are layer-by-layer lists of Vectors and
   // Matrixes respectively
   Biases nabla_b;
-  for (const auto &layer_biases : biases) {
+  for (const auto &layer_biases : biases_) {
     nabla_b.push_back(Vector<NNType>::Zeros(layer_biases.length));
   }
   Weights nabla_w;
-  for (const auto &layer_weights : weights) {
+  for (const auto &layer_weights : weights_) {
     nabla_w.push_back(
         Matrix<NNType>::Zeros(layer_weights.height, layer_weights.width));
   }
@@ -140,48 +148,43 @@ DeltaNablaBAndW Network::Backprop(Example example) {
   // Feedforward
   std::vector<Vector<NNType>> activations({example.first}); // layer activations
   std::vector<Vector<NNType>> zs;                           // z vectors
-  for (unsigned int layer_idx = 0; layer_idx < num_layers - 1; layer_idx++) {
-    zs.push_back(weights[layer_idx] * activations.back() + biases[layer_idx]);
+  for (unsigned int layer_idx = 0; layer_idx < num_layers_ - 1; layer_idx++) {
+    zs.push_back(weights_[layer_idx] * activations.back() + biases_[layer_idx]);
     activations.push_back(Sigmoid(zs.back()));
   }
 
   // Backward pass
   // Calculate the gradients of the last layer
-  auto delta = CostDerivative(activations.back(), example.second) *
+  auto delta = CostDerivative_(activations.back(), example.second) *
                SigmoidPrime(zs.back());
   nabla_b.back() = delta;
   nabla_w.back() = delta.OuterProduct(activations.end()[-2]);
 
   // Now iterate backwards from the penultimate layer (-2)
-  for (int neg_layer_idx = -2; neg_layer_idx > -num_layers; neg_layer_idx--) {
+  for (int neg_layer_idx = -2; neg_layer_idx > -num_layers_; neg_layer_idx--) {
     const auto z = zs.end()[neg_layer_idx];
-    delta =
-        weights.end()[neg_layer_idx + 1].Transpose() * delta * SigmoidPrime(z);
-    nabla_b.end()[neg_layer_idx] = delta;
-    nabla_w.end()[neg_layer_idx] =
-        delta.OuterProduct(activations.end()[neg_layer_idx - 1]);
+    nabla_b.end()[neg_layer_idx] =
+        weights_.end()[neg_layer_idx + 1].Transpose() *
+        nabla_b.end()[neg_layer_idx + 1] * SigmoidPrime(z);
+    nabla_w.end()[neg_layer_idx] = nabla_b.end()[neg_layer_idx].OuterProduct(
+        activations.end()[neg_layer_idx - 1]);
   }
   return std::make_pair(nabla_b, nabla_w);
 }
 
-Vector<NNType> Network::CostDerivative(Vector<NNType> output,
+Vector<NNType> Network::CostDerivative_(Vector<NNType> output,
                                        Vector<NNType> ground_truth) {
   return output - ground_truth;
 }
 
-unsigned int Network::Evaluate(AnnotatedData test_data) {
+unsigned int Network::Evaluate_(AnnotatedData test_data) {
   unsigned int n_correct = 0;
   for (const auto &example : test_data) {
     const auto output = FeedForward(example.first);
     const auto result_idx = GetMaxIndex(output);
     const auto gt_result_idx = OneHotToIndex(example.second);
-    std::cout << "Testing " << output << "(" << result_idx << ") vs "
-              << example.second << "(" << gt_result_idx;
     if (result_idx == gt_result_idx) {
       n_correct++;
-      std::cout << ") ... correct" << std::endl;
-    } else {
-      std::cout << ") ... incorrect" << std::endl;
     }
   }
   return n_correct;

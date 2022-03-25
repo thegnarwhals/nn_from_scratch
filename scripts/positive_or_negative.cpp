@@ -30,14 +30,6 @@ int main() {
   // Network that can decide whether a number is positive or negative
   // Input one number, two output neurons, one for positive, one for negative.
   nn::Network network({1, 2});
-  std::cout << "Initial weights:" << std::endl;
-  for (const auto &weights : network.weights) {
-    std::cout << weights << std::endl;
-  }
-  std::cout << "Initial biases:" << std::endl;
-  for (const auto &biases : network.biases) {
-    std::cout << biases << std::endl;
-  }
 
   // Let's make some training data for estimating whether a number is positive
   // or negative
@@ -47,15 +39,6 @@ int main() {
   constexpr unsigned int epochs = 10, mini_batch_size = 10;
   constexpr float eta = 1.f;
   network.Sgd(training_data, epochs, mini_batch_size, eta, test_data);
-
-  std::cout << "Final weights:" << std::endl;
-  for (const auto &weights : network.weights) {
-    std::cout << weights << std::endl;
-  }
-  std::cout << "Final biases:" << std::endl;
-  for (const auto &biases : network.biases) {
-    std::cout << biases << std::endl;
-  }
 
   while(true) {
     // Run on user input
