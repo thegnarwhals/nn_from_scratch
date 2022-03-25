@@ -58,7 +58,8 @@ template <typename T> Vector<T> Relu(Vector<T> input) {
  *
  * @tparam     T      Data type
  *
- * @return     The ReLU gradient of the elements of the input vector (0 if negative, 1 if positive)
+ * @return     The ReLU gradient of the elements of the input vector (0 if
+ * negative, 1 if positive)
  */
 template <typename T> Vector<T> ReluPrime(Vector<T> input) {
   Vector<T> output(input.length);
