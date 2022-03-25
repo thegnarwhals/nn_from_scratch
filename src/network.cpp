@@ -55,7 +55,7 @@ Vector<NNType> Network::FeedForward(Vector<NNType> input) {
   std::vector<Vector<NNType>> layer_outputs({input});
   for (unsigned int i = 1; i < num_layers_; i++) {
     layer_outputs.push_back(
-        Sigmoid(weights_[i - 1] * layer_outputs.back() + biases_[i - 1]));
+        Nonlinearity_(weights_[i - 1] * layer_outputs.back() + biases_[i - 1]));
   }
   return layer_outputs.back();
 }
@@ -150,13 +150,13 @@ DeltaNablaBAndW Network::Backprop_(Example example) {
   std::vector<Vector<NNType>> zs;                           // z vectors
   for (unsigned int layer_idx = 0; layer_idx < num_layers_ - 1; layer_idx++) {
     zs.push_back(weights_[layer_idx] * activations.back() + biases_[layer_idx]);
-    activations.push_back(Sigmoid(zs.back()));
+    activations.push_back(Nonlinearity_(zs.back()));
   }
 
   // Backward pass
   // Calculate the gradients of the last layer
   auto delta = CostDerivative_(activations.back(), example.second) *
-               SigmoidPrime(zs.back());
+               NonlinearityPrime_(zs.back());
   nabla_b.back() = delta;
   nabla_w.back() = delta.OuterProduct(activations.end()[-2]);
 
@@ -165,7 +165,7 @@ DeltaNablaBAndW Network::Backprop_(Example example) {
     const auto z = zs.end()[neg_layer_idx];
     nabla_b.end()[neg_layer_idx] =
         weights_.end()[neg_layer_idx + 1].Transpose() *
-        nabla_b.end()[neg_layer_idx + 1] * SigmoidPrime(z);
+        nabla_b.end()[neg_layer_idx + 1] * NonlinearityPrime_(z);
     nabla_w.end()[neg_layer_idx] = nabla_b.end()[neg_layer_idx].OuterProduct(
         activations.end()[neg_layer_idx - 1]);
   }
@@ -189,5 +189,23 @@ unsigned int Network::Evaluate_(AnnotatedData test_data) {
   }
   return n_correct;
 }
+
+Vector<NNType> SigmoidNetwork::Nonlinearity_(Vector<NNType> weighted_inputs) {
+  return Sigmoid(weighted_inputs);
+}
+
+Vector<NNType> SigmoidNetwork::NonlinearityPrime_(Vector<NNType> weighted_inputs) {
+  return SigmoidPrime(weighted_inputs);
+}
+
+Vector<NNType> ReluNetwork::Nonlinearity_(Vector<NNType> weighted_inputs) {
+  return Relu(weighted_inputs);
+}
+
+Vector<NNType> ReluNetwork::NonlinearityPrime_(Vector<NNType> weighted_inputs) {
+  return ReluPrime(weighted_inputs);
+}
+
+
 
 } // namespace nn

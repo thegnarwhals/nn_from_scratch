@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 #include <optional>
 #include <random>
 #include <utility>
@@ -27,7 +28,7 @@ nn::AnnotatedData GenerateAnnotatedData(unsigned int n_examples) {
 int main() {
   // Network that can decide whether a number is positive or negative
   // Input one number, two output neurons, one for positive, one for negative.
-  nn::Network network({1, 2});
+  std::unique_ptr<nn::Network> network(new nn::SigmoidNetwork({1, 2}));
 
   // Let's make some training data for estimating whether a number is positive
   // or negative
@@ -36,7 +37,7 @@ int main() {
   auto test_data = GenerateAnnotatedData(n_test);
   constexpr unsigned int epochs = 10, mini_batch_size = 10;
   constexpr float eta = 1.f;
-  network.Sgd(training_data, epochs, mini_batch_size, eta, test_data);
+  network->Sgd(training_data, epochs, mini_batch_size, eta, test_data);
 
   while(true) {
     // Run on user input
@@ -44,7 +45,7 @@ int main() {
     std::cout << "Enter a float: " << std::flush;
     std::cin >> input.elements[0];
     std::cout << "Input: " << input << std::endl;
-    const auto output = network.FeedForward(input);
+    const auto output = network->FeedForward(input);
     std::cout << "Output: " << output << std::endl;
     if (output.elements[0] > output.elements[1]) {
       std::cout << "Prediction: positive!" << std::endl;
