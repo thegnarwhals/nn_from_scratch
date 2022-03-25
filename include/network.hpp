@@ -89,6 +89,9 @@ private:
   Biases biases_;
 };
 
+/**
+ * @brief      This class describes a network with sigmoid nonlinearities.
+ */
 class SigmoidNetwork : public Network {
 public:
   using Network::Network;
@@ -97,6 +100,9 @@ private:
   virtual Vector<NNType> NonlinearityPrime_(Vector<NNType> weighted_inputs) override;
 };
 
+/**
+ * @brief      This class describes a network with ReLU nonlinearities.
+ */
 class ReluNetwork : public Network {
 public:
   using Network::Network;
