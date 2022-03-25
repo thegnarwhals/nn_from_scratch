@@ -206,6 +206,4 @@ Vector<NNType> ReluNetwork::NonlinearityPrime_(Vector<NNType> weighted_inputs) {
   return ReluPrime(weighted_inputs);
 }
 
-
-
 } // namespace nn
